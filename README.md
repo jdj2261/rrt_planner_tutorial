@@ -17,15 +17,21 @@ If you go to the page below, you can see the summary of the contents of the thes
 ├── img
 │   └── rrt-star.png
 ├── rrt
-│   ├── rrt.ipynb
-│   ├── rrt.py
-│   ├── rrt_3d.ipynb
-│   └── rrt_3d.py
+│   ├── 2d
+│   │   ├── rrt.ipynb
+│   │   ├── rrt.py
+│   │   └── rrt_sim.py
+│   └── 3d
+│       ├── rrt_3d.ipynb
+│       ├── rrt_3d.py
+│       └── rrt_3d_sim.py
 └── rrt_star
-    ├── rrt_star.ipynb
-    ├── rrt_star.py
-    ├── rrt_star_3d.ipynb
-    └── rrt_star_3d.py
+    ├── 2d
+    │   ├── rrt_star.ipynb
+    │   └── rrt_star.py
+    └── 3d
+        ├── rrt_star_3d.ipynb
+        └── rrt_star_3d.py
 ~~~
 
 
