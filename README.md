@@ -33,6 +33,7 @@ If you go to the page below, you can see the summary of the contents of the thes
 ### 3. RRT, RRT* Compare results
 
 > red line 	: RRT
+>
 > green line : RRT*
 
 <img src="img/rrt-star.png" height="400" widht="300"/>
