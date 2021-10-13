@@ -28,10 +28,12 @@ If you go to the page below, you can see the summary of the contents of the thes
 └── rrt_star
     ├── 2d
     │   ├── rrt_star.ipynb
-    │   └── rrt_star.py
+    │   ├── rrt_star.py
+    │   └── rrt_star_sim.py
     └── 3d
         ├── rrt_star_3d.ipynb
-        └── rrt_star_3d.py
+        ├── rrt_star_3d.py
+        └── rrt_star_3d_sim.py
 ~~~
 
 
