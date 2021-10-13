@@ -151,8 +151,6 @@ class RRTStar:
 
         return new_point
 
-    # TODO
-    # use fcl lib
     def collision_free(self, pointA, pointB):
         for (obs_x, obs_y, obs_z, obs_r) in self.env.obstacles:
             if self.is_inside_circle(obs_x, obs_y, obs_z, obs_r, pointB):
