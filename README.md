@@ -1,6 +1,6 @@
 # rrt_planner_tutorial
 
-This is the rrt, rrt* planner implemented after reading the **Sampling-based Algorithms for Optimal Motion Plannig** article.
+This is the rrt, rrt* planner tutorial implemented after reading the **Sampling-based Algorithms for Optimal Motion Plannig** article.
 
 ### 1. Article Review
 
