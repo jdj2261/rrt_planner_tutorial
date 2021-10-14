@@ -64,17 +64,13 @@ class RRTStar:
         self.gamma_RRTs = gamma_RRT_star
         self.d = dimension
         self.T = Tree()
-        self.testT = Tree()
         self.cost = {}
 
     def generate_path(self):
         path = None
-        init_path = None
         self.T.add_vertex(self.start)
-        self.testT.add_vertex(self.start)
         self.cost[0] = 0
-        test_goal = False
-        cnt = 0
+
         for k in range(self.max_iter):
             rand_point = self.random_state()
             nearest_point, nearest_idx = self.nearest_neighbor(rand_point, self.T)
@@ -82,20 +78,6 @@ class RRTStar:
 
             if k % 500 == 0:
                 print(f"iter : {k}")
-
-            # RRT
-            #########################################################################################
-            test_nearest_point, test_nearest_idx = self.nearest_neighbor(rand_point, self.testT)
-            test_new_point = self.new_state(test_nearest_point, rand_point)
-
-            if self.collision_free(test_nearest_point, test_new_point) and not test_goal:
-                self.testT.add_vertex(test_new_point)
-                test_new_idx = len(self.testT.vertices) - 1
-                self.testT.add_edge([test_nearest_idx, test_new_idx])
-
-                if self.reach_to_goal(test_new_point):
-                    test_goal = True
-            #########################################################################################
 
             # RRT-star
             if self.collision_free(nearest_point, new_point):
@@ -110,12 +92,10 @@ class RRTStar:
                 self.rewire(neighbor_indexes, new_point, new_idx)
 
                 if self.reach_to_goal(new_point):
-                    cnt += 1
                     path = self.find_path(self.T)
-                    if cnt == 1 :
-                        init_path = path
 
-        return path, init_path
+
+        return path
 
     def random_state(self):
         if np.random.random() > self.epsilon:
@@ -244,14 +224,6 @@ class RRTStar:
             vertices.append((from_node, goal_node))
         return vertices
 
-    def test_get_rrt_tree(self):
-        vertices = []
-        for edge in self.testT.edges:
-            from_node = self.testT.vertices[edge[0]]
-            goal_node = self.testT.vertices[edge[1]]
-            vertices.append((from_node, goal_node))
-        return vertices
-
 
 def plot_circle(x, y, size, color="-b"):
     deg = list(range(0, 360, 5))
@@ -290,16 +262,12 @@ if __name__ == "__main__":
                        epsilon=0.2, 
                        max_iter=K)
 
-    path, init_path = planner.generate_path()
+    path = planner.generate_path()
     tree = planner.get_rrt_tree()
-    test_tree = planner.test_get_rrt_tree()
 
     # Plot
     for circle in circles:
         plot_circle(circle[0], circle[1], circle[2])
-
-    for vertex in test_tree:
-        plt.plot([x for (x, y) in vertex],[y for (x, y) in vertex], '--r', linewidth=1,)
 
     for vertex in tree:
         plt.plot([x for (x, y) in vertex],[y for (x, y) in vertex], 'k', linewidth=1,)
@@ -308,7 +276,6 @@ if __name__ == "__main__":
         print("cannot create path")
     else:
         plt.scatter([x for (x, y) in path], [y for (x, y) in path], s=55, c = 'b')
-        plt.plot([x for (x, y) in init_path], [y for (x, y) in init_path], '-r', linewidth=2,)
         plt.plot([x for (x, y) in path], [y for (x, y) in path], '-g', linewidth=2,)
         plt.text(path[0][0], path[0][1], 'Start', verticalalignment='bottom', horizontalalignment='center', size="20")
         plt.text(path[-1][0], path[-1][1], 'Goal', verticalalignment='bottom', horizontalalignment='center', size="20")

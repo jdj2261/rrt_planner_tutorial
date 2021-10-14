@@ -64,19 +64,15 @@ class RRTStar:
         self.gamma_RRTs = gamma_RRT_star
         self.d = dimension
         self.T = Tree()
-        self.testT = Tree()
         self.cost = {}
 
     def generate_path(self):
         path = None
-        init_path = None
         self.T.add_vertex(self.start)
-        self.testT.add_vertex(self.start)
         self.cost[0] = 0
-        test_goal = False
         last_plt = None
 
-        fig = plt.plot(self.start[0],self.start[1],'*g',self.goal[0], self.goal[1],'*g', markersize=12)
+        plt.plot(self.start[0],self.start[1],'*g',self.goal[0], self.goal[1],'*r', markersize=12)
         plt.title("RRT Star with Obstacles")
         plt.xlabel("X-Position")
         plt.ylabel("Y-Position")
@@ -93,20 +89,6 @@ class RRTStar:
 
             if k % 500 == 0:
                 print(f"iter : {k}")
-
-            # RRT
-            #########################################################################################
-            test_nearest_point, test_nearest_idx = self.nearest_neighbor(rand_point, self.testT)
-            test_new_point = self.new_state(test_nearest_point, rand_point)
-
-            if self.collision_free(test_nearest_point, test_new_point) and not test_goal:
-                self.testT.add_vertex(test_new_point)
-                test_new_idx = len(self.testT.vertices) - 1
-                self.testT.add_edge([test_nearest_idx, test_new_idx])
-
-                if self.reach_to_goal(test_new_point):
-                    test_goal = True
-            #########################################################################################
 
             # RRT-star
             if self.collision_free(nearest_point, new_point):
@@ -274,15 +256,6 @@ class RRTStar:
             vertices.append((from_node, goal_node))
         return vertices
 
-    def test_get_rrt_tree(self):
-        vertices = []
-        for edge in self.testT.edges:
-            # print(edge)
-            from_node = self.testT.vertices[edge[0]]
-            goal_node = self.testT.vertices[edge[1]]
-            vertices.append((from_node, goal_node))
-        return vertices
-
 
 def plot_circle(x, y, size, color="-b"):
     deg = list(range(0, 360, 5))
@@ -323,14 +296,10 @@ if __name__ == "__main__":
 
     path = planner.generate_path()
     tree = planner.get_rrt_tree()
-    test_tree = planner.test_get_rrt_tree()
 
     # Plot
     for circle in circles:
         plot_circle(circle[0], circle[1], circle[2])
-
-    for vertex in test_tree:
-        plt.plot([x for (x, y) in vertex],[y for (x, y) in vertex], '--r', linewidth=1,)
 
     for vertex in tree:
         plt.plot([x for (x, y) in vertex],[y for (x, y) in vertex], 'k', linewidth=1,)

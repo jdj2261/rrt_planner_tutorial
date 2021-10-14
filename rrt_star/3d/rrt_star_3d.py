@@ -46,7 +46,7 @@ class Environment:
 
 class RRTStar:
     """
-    RRT path planning
+    RRTStar path planning
     """
     def __init__(
         self, 
@@ -67,16 +67,14 @@ class RRTStar:
         self.gamma_RRTs = gamma_RRT_star
         self.d = len(self.start)
         self.T = Tree()
-        self.testT = Tree()
         self.cost = {}
 
     def generate_path(self):
         path = None
         init_path = None
         self.T.add_vertex(self.start)
-        self.testT.add_vertex(self.start)
         self.cost[0] = 0
-        test_goal = False
+
         cnt = 0
         for k in range(self.max_iter):
             rand_point = self.random_state()
@@ -86,20 +84,7 @@ class RRTStar:
             if k % 500 == 0:
                 print(f"iter : {k}")
 
-            # RRT
-            #########################################################################################
-            test_nearest_point, test_nearest_idx = self.nearest_neighbor(rand_point, self.testT)
-            test_new_point = self.new_state(test_nearest_point, rand_point)
-
-            if self.collision_free(test_nearest_point, test_new_point) and not test_goal:
-                self.testT.add_vertex(test_new_point)
-                test_new_idx = len(self.testT.vertices) - 1
-                self.testT.add_edge([test_nearest_idx, test_new_idx])
-
-                if self.reach_to_goal(test_new_point):
-                    test_goal = True
-            #########################################################################################
-
+  
             # RRT-star
             if self.collision_free(nearest_point, new_point):
                 neighbor_indexes = self.find_near_neighbor(new_point)                
@@ -246,14 +231,6 @@ class RRTStar:
             vertices.append((from_node, goal_node))
         return vertices
 
-    def test_get_rrt_tree(self):
-        vertices = []
-        for edge in self.testT.edges:
-            from_node = self.testT.vertices[edge[0]]
-            goal_node = self.testT.vertices[edge[1]]
-            vertices.append((from_node, goal_node))
-        return vertices
-
 
 def init_3d_figure(name=None):
     """
@@ -279,7 +256,7 @@ def plot_sphere(ax=None, radius=1.0, p=np.zeros(3), n_steps=20, alpha=1.0, color
 
 if __name__ == "__main__":
 
-    fig, ax = init_3d_figure("Test")
+    fig, ax = init_3d_figure("RRT STAR")
 
     if len(sys.argv) > 1:
         K = int(sys.argv[1])
@@ -312,7 +289,7 @@ if __name__ == "__main__":
 
     path, init_path = planner.generate_path()
     tree = planner.get_rrt_tree()
-    test_tree = planner.test_get_rrt_tree()
+
 
     # Plot
     for sp_x, sp_y, sp_z, sp_r in spheres:
@@ -320,8 +297,6 @@ if __name__ == "__main__":
         sp_pos = np.array([sp_x, sp_y, sp_z])
         plot_sphere(ax, radius=radius, p=sp_pos, alpha=0.2, color="k")
 
-    for vertex in test_tree:
-        ax.plot([x for (x, y, z) in vertex],[y for (x, y, z) in vertex], [z for (x, y, z) in vertex],'--r', linewidth=1,)
 
     for vertex in tree:
         ax.plot([x for (x, y, z) in vertex],[y for (x, y, z) in vertex], [z for (x, y, z) in vertex],'k', linewidth=1,)

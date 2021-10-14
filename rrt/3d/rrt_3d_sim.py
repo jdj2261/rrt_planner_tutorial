@@ -210,7 +210,7 @@ if __name__ == "__main__":
 
     spheres = []
     radius = 5
-    for i in range(20):
+    for i in range(5):
         x = random.choice([i for i in range(-10, 10)])
         y = random.choice([i for i in range(-10, 10)])
         z = random.choice([i for i in range(-10, 10)])
@@ -237,18 +237,24 @@ if __name__ == "__main__":
         sp_pos = np.array([sp_x, sp_y, sp_z])
         plot_sphere(ax, radius=radius, p=sp_pos, alpha=0.2, color="k")
 
+    ax.plot(start_point[0], start_point[1],
+            start_point[2], '*g', markersize=12)
+    ax.plot(goal_point[0], goal_point[1], goal_point[2], '*r', markersize=12)
+
     ax.text(path[0][0], path[0][1], path[0][2], 'Start', verticalalignment='bottom', horizontalalignment='center', size="20")
     ax.text(path[-1][0], path[-1][1], path[-1][2],'Goal', verticalalignment='bottom', horizontalalignment='center', size="20")
 
     for vertex in tree:
         ax.plot([x for (x, y, z) in vertex],[y for (x, y, z) in vertex], [z for (x, y, z) in vertex],'k', linewidth=1,)
-        plt.pause(0.01)
+        plt.pause(0.001)
         
     plt.show(block=False)
     plt.pause(1)
     plt.close()
 
     fig, ax = init_3d_figure("Test")
+    ax.plot(start_point[0], start_point[1], start_point[2], '*g', markersize=12)
+    ax.plot(goal_point[0], goal_point[1], goal_point[2], '*r', markersize=12)
 
     if path is None:
         print("cannot create path")

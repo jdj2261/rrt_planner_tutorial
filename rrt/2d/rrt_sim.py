@@ -200,6 +200,12 @@ if __name__ == "__main__":
     path = planner.generate_path()
     tree = planner.get_rrt_tree()
 
+    plt.plot(start_point[0], start_point[1], '*g',
+             goal_point[0], goal_point[1], '*r', markersize = 12)
+    plt.title("RRT with Obstacles")
+    plt.xlabel("X-Position")
+    plt.ylabel("Y-Position")
+
     # Plot
     for circle in circles:
         plot_circle(circle[0], circle[1], circle[2])
@@ -212,7 +218,12 @@ if __name__ == "__main__":
     plt.pause(1)
     plt.close()
 
-    
+    plt.plot(start_point[0], start_point[1], '*g',
+             goal_point[0], goal_point[1], '*r', markersize=12)
+    plt.title("RRT with Obstacles")
+    plt.xlabel("X-Position")
+    plt.ylabel("Y-Position")
+
     if path is None:
         print("cannot create path")
     else:

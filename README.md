@@ -38,11 +38,31 @@ If you go to the page below, you can see the summary of the contents of the thes
 
 
 
-### 3. RRT, RRT* Compare results
+### 3. RRT, RRT* Compare Results
 
 > red line 	: RRT
 >
 > green line : RRT*
 
 <img src="img/rrt-star.png" height="400" widht="300"/>
+
+
+
+### 4. Simulation Results
+
+- RRT
+
+|                          RRT 2D                           |                          RRT 3D                           |
+| :-------------------------------------------------------: | :-------------------------------------------------------: |
+| <img src="img/rrt_2d_sim.gif" weight="600" height="300"/> | <img src="img/rrt_3d_sim.gif" weight="600" height="300"/> |
+
+
+
+- RRT-star
+
+|                         RRT Star 2D                          |                         RRT Star 3D                          |
+| :----------------------------------------------------------: | :----------------------------------------------------------: |
+| <img src="img/rrt_star_2d_sim.gif" weight="600" height="300"/> | <img src="img/rrt_star_3d_sim.gif" weight="600" height="300"/> |
+
+
 
