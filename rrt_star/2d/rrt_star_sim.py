@@ -4,6 +4,7 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 
+
 class Tree:
     """
     Tree
@@ -65,6 +66,7 @@ class RRTStar:
         self.d = dimension
         self.T = Tree()
         self.cost = {}
+        self.paths = []
 
     def generate_path(self):
         path = None
@@ -87,33 +89,40 @@ class RRTStar:
             nearest_point, nearest_idx = self.nearest_neighbor(rand_point, self.T)
             new_point = self.new_state(nearest_point, rand_point)
 
-            if k % 500 == 0:
+            if k % 100 == 0:
                 print(f"iter : {k}")
 
             # RRT-star
             if self.collision_free(nearest_point, new_point):
-                neighbor_indexes = self.find_near_neighbor(new_point)                
+                neighbor_indexes, radius = self.find_near_neighbor(new_point)                
                 min_cost = self.get_new_cost(nearest_idx, nearest_point, new_point)
                 min_cost, nearest_idx = self.get_minimum_cost(neighbor_indexes, new_point, min_cost, nearest_idx)
 
-                # plt.plot([self.T.vertices[nearest_idx][0],new_point[0]], [self.T.vertices[nearest_idx][1],new_point[1]], 'r--', linewidth=1.0,)
-                # plt.scatter(new_point[0], new_point[1], s=10, c = 'b')
+                plt.plot([self.T.vertices[nearest_idx][0],new_point[0]], [self.T.vertices[nearest_idx][1],new_point[1]], 'r--', linewidth=1.0,)
+                plt.scatter(new_point[0], new_point[1], s=10, c = 'b')
                 self.T.add_vertex(new_point)
                 new_idx = len(self.T.vertices) - 1
                 self.cost[new_idx] = min_cost
                 self.T.add_edge([nearest_idx, new_idx])
-                nearest_idx = self.rewire(neighbor_indexes, nearest_idx, new_point, new_idx)
+                self.rewire(neighbor_indexes, new_point, new_idx)
 
-                # plt.plot([self.T.vertices[nearest_idx][0], new_point[0]], [self.T.vertices[nearest_idx][1], new_point[1]], 'k', linewidth=1,)
+                plt.plot([self.T.vertices[nearest_idx][0], new_point[0]], [self.T.vertices[nearest_idx][1], new_point[1]], 'k', linewidth=1,)
+                plot_circle(new_point[0], new_point[1], radius, "k--")
                 plt.pause(0.001)
+
+                # print(self.T.edges[nearest_idx])
                 if self.reach_to_goal(new_point):
                     path = self.find_path(self.T)
+                    self.paths.append(path)
                     if last_plt is None:
                         pass
                     else:
                         l = last_plt.pop(0)
                         l.remove()
                     plt_path = plt.plot([x for (x, y) in path], [y for (x, y) in path], 'g', linewidth=3,)
+                    
+                    for i, path in enumerate(self.paths):
+                        init_path = plt.plot([x for (x, y) in path], [y for (x, y) in path], 'r', linewidth=1,)
                     last_plt = plt_path
 
         plt.plot([x for (x, y) in path], [y for (x, y) in path], '-b', linewidth=4,)
@@ -132,8 +141,7 @@ class RRTStar:
         return point
 
     def nearest_neighbor(self, random_point, tree):
-        distances = [self.distance(random_point, point) 
-                     for point in tree.vertices]
+        distances = [self.distance(random_point, point) for point in tree.vertices]
         nearest_idx = np.argmin(distances)
         nearest_point = tree.vertices[nearest_idx]
         return nearest_point, nearest_idx
@@ -156,17 +164,34 @@ class RRTStar:
     # TODO
     # use fcl lib
     def collision_free(self, pointA, pointB):
+        m = 0
+        b = 0
+
+        if pointA[0] == pointB[0]:
+            x = pointA[0]
+        elif pointA[1] == pointB[1]:
+            y = pointA[0]
+        else:
+            m = (pointB[1]-pointA[1]) / (pointB[0]-pointA[0])
+            b = pointA[1] - (m*pointA[0])
+
         for (obs_x, obs_y, obs_r) in self.env.obstacles:
             if self.is_inside_circle(obs_x, obs_y, obs_r, pointB):
                 return False
-            if self.is_intersect_circle(obs_x, obs_y, obs_r, pointA, pointB):
+            if pointA[0] == pointB[0]:
+                d = abs(pointB[0] - obs_x)
+            elif pointA[1] == pointB[1]:
+                d = abs(pointB[1] - obs_y)
+            else:
+                d = abs(m*obs_x - obs_y + b) / np.sqrt(m**2 + 1)
+            if d < obs_r:
                 return False
         return True
 
     def is_inside_circle(self, x, y, r, point):
         obs_point = np.array([x, y])
         distances = self.distance(point, obs_point)
-        if distances <= r + self.delta_dis:
+        if distances <= r**2:
             return True
         return False
 
@@ -191,15 +216,16 @@ class RRTStar:
     def find_near_neighbor(self, point):
         card_V = len(self.T.vertices) + 1
         r = self.gamma_RRTs * ((math.log(card_V) / card_V) ** (1/self.d))
-        search_radius = min(r, self.delta_dis)
+        search_radius = min(r, self.gamma_RRTs)
         dist_list = [self.distance(vertex, point) for vertex in self.T.vertices]
-                                                   
+
         near_indexes = []
         for idx, dist in enumerate(dist_list):
-            if dist <= search_radius and self.collision_free(point, self.T.vertices[idx]):
-                near_indexes.append(idx)
+            if self.collision_free(point, self.T.vertices[idx]):
+                if dist <= search_radius:
+                    near_indexes.append(idx)
 
-        return near_indexes
+        return near_indexes, search_radius
 
     def get_new_cost(self, idx, A, B):
         cost = self.cost[idx] + self.distance(A, B)
@@ -215,20 +241,18 @@ class RRTStar:
 
         return min_cost, nearest_idx
 
-    def rewire(self, neighbor_indexes, nearest_idx, new_point, new_idx):
+    def rewire(self, neighbor_indexes, new_point, new_idx):
         if not neighbor_indexes:
-            return nearest_idx
+            return
         
         for i in neighbor_indexes:
             no_collision = self.collision_free(new_point, self.T.vertices[i])
             new_cost = self.get_new_cost(new_idx, new_point, self.T.vertices[i])
 
             if no_collision and new_cost < self.cost[i]:
+                print("rewire")
                 self.cost[i] = new_cost
-                nearest_idx = i
-                self.T.edges[i-1][0] = new_idx
-
-        return nearest_idx
+                self.T.edges[i-1][1] = new_idx
 
     def reach_to_goal(self, point):
         dist = self.distance(point, self.goal)
@@ -239,11 +263,11 @@ class RRTStar:
     def find_path(self, tree):
         path = [self.goal]
         goal_idx = tree.edges[-1][1]
- 
         while goal_idx != 0:
             path.append(tree.vertices[goal_idx])
             parent_idx = tree.edges[goal_idx-1][0]
             goal_idx = parent_idx
+        
         path.append(self.start)
 
         return path[::-1]
@@ -276,7 +300,7 @@ if __name__ == "__main__":
     env = Environment(x_min=-20, y_min=-20, x_max=20, y_max=20)
 
     circles = []
-    radius = 2
+    radius = 3
     for i in range(10):
         x = random.choice([i for i in range(-10, 10)])
         y = random.choice([i for i in range(-10, 10)])
@@ -289,10 +313,10 @@ if __name__ == "__main__":
     planner = RRTStar( env, 
                        start=start_point, 
                        goal=goal_point, 
-                       delta_distance=2,
-                       gamma_RRT_star=100,
+                       delta_distance=5,
+                       gamma_RRT_star=30,
                        epsilon=0.2, 
-                       max_iter=K)
+                       max_iter=800)
 
     path = planner.generate_path()
     tree = planner.get_rrt_tree()
@@ -303,12 +327,14 @@ if __name__ == "__main__":
 
     for vertex in tree:
         plt.plot([x for (x, y) in vertex],[y for (x, y) in vertex], 'k', linewidth=1,)
+        plt.plot([x for (x, y) in planner.paths[0]],[y for (x, y) in planner.paths[0]], 'k', linewidth=1,)
 
     if path is None:
         print("cannot create path")
     else:
         plt.scatter([x for (x, y) in path], [y for (x, y) in path], s=55, c = 'b')
         plt.plot([x for (x, y) in path], [y for (x, y) in path], '-b', linewidth=4,)
+        plt.plot([x for (x, y) in planner.paths[0]], [y for (x, y) in planner.paths[0]], '-r', linewidth=2,)
         plt.text(path[0][0], path[0][1], 'Start', verticalalignment='bottom', horizontalalignment='center', size="20")
         plt.text(path[-1][0], path[-1][1], 'Goal', verticalalignment='bottom', horizontalalignment='center', size="20")
     plt.show()

@@ -76,7 +76,7 @@ class RRTStar:
             nearest_point, nearest_idx = self.nearest_neighbor(rand_point, self.T)
             new_point = self.new_state(nearest_point, rand_point)
 
-            if k % 500 == 0:
+            if k % 100 == 0:
                 print(f"iter : {k}")
 
             # RRT-star
@@ -127,20 +127,35 @@ class RRTStar:
 
         return new_point
 
-    # TODO
-    # use fcl lib
     def collision_free(self, pointA, pointB):
+        m = 0
+        b = 0
+        if pointA[0] == pointB[0]:
+            x = pointA[0]
+        elif pointA[1] == pointB[1]:
+            y = pointA[0]
+        else:
+            m = (pointB[1]-pointA[1]) / (pointB[0]-pointA[0])
+            b = pointA[1] - (m*pointA[0])
+
         for (obs_x, obs_y, obs_r) in self.env.obstacles:
             if self.is_inside_circle(obs_x, obs_y, obs_r, pointB):
                 return False
-            if self.is_intersect_circle(obs_x, obs_y, obs_r, pointA, pointB):
+            if pointA[0] == pointB[0]:
+                d = abs(pointB[0] - obs_x)
+            elif pointA[1] == pointB[1]:
+                d = abs(pointB[1] - obs_y)
+            else:
+                d = abs(m*obs_x - obs_y + b) / np.sqrt(m**2 + 1)
+            # print(d)
+            if d < obs_r:
                 return False
         return True
 
     def is_inside_circle(self, x, y, r, point):
         obs_point = np.array([x, y])
         distances = self.distance(point, obs_point)
-        if distances <= r + self.delta_dis:
+        if distances <= r**2:
             return True
         return False
 
@@ -165,7 +180,7 @@ class RRTStar:
     def find_near_neighbor(self, point):
         card_V = len(self.T.vertices) + 1
         r = self.gamma_RRTs * ((math.log(card_V) / card_V) ** (1/self.d))
-        search_radius = min(r, self.delta_dis)
+        search_radius = min(r, self.gamma_RRTs)
         dist_list = [self.distance(vertex, point) for vertex in self.T.vertices]
                                                    
         near_indexes = []
@@ -244,7 +259,7 @@ if __name__ == "__main__":
     env = Environment(x_min=-20, y_min=-20, x_max=20, y_max=20)
 
     circles = []
-    radius = 2
+    radius = 3
     for i in range(10):
         x = random.choice([i for i in range(-10, 10)])
         y = random.choice([i for i in range(-10, 10)])
@@ -257,15 +272,14 @@ if __name__ == "__main__":
     planner = RRTStar( env, 
                        start=start_point, 
                        goal=goal_point, 
-                       delta_distance=2,
+                       delta_distance=5,
                        gamma_RRT_star=100,
                        epsilon=0.2, 
-                       max_iter=K)
+                       max_iter=1000)
 
     path = planner.generate_path()
     tree = planner.get_rrt_tree()
-
-    # Plot
+    # # Plot
     for circle in circles:
         plot_circle(circle[0], circle[1], circle[2])
 

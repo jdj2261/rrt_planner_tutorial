@@ -68,6 +68,7 @@ class RRTStar:
         self.d = len(self.start)
         self.T = Tree()
         self.cost = {}
+        self.paths = []
 
     def generate_path(self):
         path = None
@@ -80,44 +81,49 @@ class RRTStar:
         ax.plot(self.start[0], self.start[1], self.start[2],'*g', markersize=12)
         ax.plot(self.goal[0], self.goal[1], self.goal[2],'*r', markersize=12)
 
-        # for sp_x, sp_y, sp_z, sp_r in env.obstacles:
-        #     sp_radius = sp_r
-        #     sp_pos = np.array([sp_x, sp_y, sp_z])
-        #     plot_sphere(ax, radius=sp_radius, p=sp_pos, alpha=0.2, color="k")
+        for sp_x, sp_y, sp_z, sp_r in env.obstacles:
+            sp_radius = sp_r
+            sp_pos = np.array([sp_x, sp_y, sp_z])
+            plot_sphere(ax, radius=sp_radius, p=sp_pos, alpha=0.2, color="k")
 
         for k in range(self.max_iter):
             rand_point = self.random_state()
             nearest_point, nearest_idx = self.nearest_neighbor(rand_point, self.T)
             new_point = self.new_state(nearest_point, rand_point)
 
-            if k % 500 == 0:
+            if k % 100 == 0:
                 print(f"iter : {k}")
 ############################################################################
 
             # RRT-star
             if self.collision_free(nearest_point, new_point):
-                neighbor_indexes = self.find_near_neighbor(new_point)                
+                neighbor_indexes, radius = self.find_near_neighbor(new_point) 
+                self.T.add_vertex(new_point)
+                new_idx = len(self.T.vertices) - 1               
                 min_cost = self.get_new_cost(nearest_idx, nearest_point, new_point)
                 min_cost, nearest_idx = self.get_minimum_cost(neighbor_indexes, new_point, min_cost, nearest_idx)
  
 
-                # plt.plot([self.T.vertices[nearest_idx][0],new_point[0]], 
-                #          [self.T.vertices[nearest_idx][1],new_point[1]], 
-                #          [self.T.vertices[nearest_idx][2],new_point[2]], 
-                #          'r--', linewidth=1.0,)
-                # plt.scatter(new_point[0], new_point[1], new_point[2], s=10, c = 'b')
-                self.T.add_vertex(new_point)
-                new_idx = len(self.T.vertices) - 1
+                ax.plot([self.T.vertices[nearest_idx][0],new_point[0]], 
+                         [self.T.vertices[nearest_idx][1],new_point[1]], 
+                         [self.T.vertices[nearest_idx][2],new_point[2]], 
+                         'r--', linewidth=1.0,)
+                ax.scatter(new_point[0], new_point[1], new_point[2], s=10, c = 'b')
+                
                 self.cost[new_idx] = min_cost
                 self.T.add_edge([nearest_idx, new_idx])
                 nearest_idx = self.rewire(neighbor_indexes, nearest_idx, new_point, new_idx)
-                # plt.plot([self.T.vertices[nearest_idx][0],new_point[0]], 
-                #          [self.T.vertices[nearest_idx][1],new_point[1]], 
-                #          [self.T.vertices[nearest_idx][2],new_point[2]], 
-                #          'k', linewidth=1.0,)
+                ax.plot([self.T.vertices[nearest_idx][0],new_point[0]], 
+                         [self.T.vertices[nearest_idx][1],new_point[1]], 
+                         [self.T.vertices[nearest_idx][2],new_point[2]], 
+                         'k', linewidth=1.0,)
+                
+                sp_pos = np.array([new_point[0], new_point[1], new_point[2]])
+                # plot_sphere(ax, radius=radius, p=sp_pos, alpha=0.05, color="b")
                 plt.pause(0.001)
                 if self.reach_to_goal(new_point):
                     path = self.find_path(self.T)
+                    self.paths.append(path)
                     if last_plt is None:
                         pass
                     else:
@@ -128,13 +134,9 @@ class RRTStar:
                                         [z for (x, y, z) in path], 
                                         'g', linewidth=3,)
                     
+                    init_path = plt.plot([x for (x, y, z) in self.paths[0]], [y for (x, y, z) in self.paths[0]], [z for (x, y, z) in self.paths[0]], 'r', linewidth=3,)
                     last_plt = plt_path
 
-        ax.plot([x for (x, y, z) in path], 
-                 [y for (x, y, z) in path], 
-                 [z for (x, y, z) in path], 
-                 '-b', linewidth=4,)
-        
         plt.show(block=False)
         plt.pause(3)
         plt.close()
@@ -207,7 +209,7 @@ class RRTStar:
     def find_near_neighbor(self, point):
         card_V = len(self.T.vertices) + 1
         r = self.gamma_RRTs * ((math.log(card_V) / card_V) ** (1/self.d))
-        search_radius = min(r, self.delta_dis)
+        search_radius = min(r, self.gamma_RRTs)
         dist_list = [self.distance(vertex, point) for vertex in self.T.vertices]
                                                    
         near_indexes = []
@@ -215,7 +217,7 @@ class RRTStar:
             if dist <= search_radius and self.collision_free(point, self.T.vertices[idx]):
                 near_indexes.append(idx)
 
-        return near_indexes
+        return near_indexes, search_radius
 
     def get_new_cost(self, idx, A, B):
         cost = self.cost[idx] + self.distance(A, B)
@@ -240,6 +242,7 @@ class RRTStar:
             new_cost = self.get_new_cost(new_idx, new_point, self.T.vertices[i])
 
             if no_collision and new_cost < self.cost[i]:
+                # print("rewire")
                 self.cost[i] = new_cost
                 nearest_idx = i
                 self.T.edges[i-1][0] = new_idx
@@ -292,17 +295,12 @@ def plot_sphere(ax=None, radius=1.0, p=np.zeros(3), n_steps=20, alpha=1.0, color
 
     ax.plot_surface(x, y, z, color=color, alpha=alpha, linewidth=0)
 
-
-
 if __name__ == "__main__":
-
-
-
     if len(sys.argv) > 1:
         K = int(sys.argv[1])
         print(K)
     else:
-        K = 500
+        K = 1000
         
     env = Environment(x_min=-20, y_min=-20, z_min=-20, x_max=20, y_max=20, z_max=20)
 
@@ -322,8 +320,8 @@ if __name__ == "__main__":
     planner = RRTStar( env, 
                        start=start_point, 
                        goal=goal_point, 
-                       delta_distance=5,
-                       gamma_RRT_star=100,
+                       delta_distance=10,
+                       gamma_RRT_star=30,
                        epsilon=0.2, 
                        max_iter=K)
 
@@ -338,9 +336,10 @@ if __name__ == "__main__":
         sp_pos = np.array([sp_x, sp_y, sp_z])
         plot_sphere(ax, radius=sp_radius, p=sp_pos, alpha=0.2, color="k")
 
-
     for vertex in tree:
         ax.plot([x for (x, y, z) in vertex],[y for (x, y, z) in vertex], [z for (x, y, z) in vertex],'k', linewidth=1,)
+        init_path = ax.plot([x for (x, y, z) in planner.paths[0]], [y for (x, y, z) in planner.paths[0]], [z for (x, y, z) in planner.paths[0]], 'r', linewidth=3,)
+
 
     if path is None:
         print("cannot create path")

@@ -81,7 +81,7 @@ class RRTStar:
             nearest_point, nearest_idx = self.nearest_neighbor(rand_point, self.T)
             new_point = self.new_state(nearest_point, rand_point)
 
-            if k % 500 == 0:
+            if k % 100 == 0:
                 print(f"iter : {k}")
 
   
@@ -172,7 +172,7 @@ class RRTStar:
     def find_near_neighbor(self, point):
         card_V = len(self.T.vertices) + 1
         r = self.gamma_RRTs * ((math.log(card_V) / card_V) ** (1/self.d))
-        search_radius = min(r, self.delta_dis)
+        search_radius = min(r, self.gamma_RRTs)
         dist_list = [self.distance(vertex, point) for vertex in self.T.vertices]
                                                    
         near_indexes = []
@@ -282,10 +282,10 @@ if __name__ == "__main__":
     planner = RRTStar( env, 
                        start=start_point, 
                        goal=goal_point, 
-                       delta_distance=2,
+                       delta_distance=5,
                        gamma_RRT_star=100,
                        epsilon=0.2, 
-                       max_iter=K)
+                       max_iter=500)
 
     path, init_path = planner.generate_path()
     tree = planner.get_rrt_tree()
@@ -298,8 +298,8 @@ if __name__ == "__main__":
         plot_sphere(ax, radius=radius, p=sp_pos, alpha=0.2, color="k")
 
 
-    for vertex in tree:
-        ax.plot([x for (x, y, z) in vertex],[y for (x, y, z) in vertex], [z for (x, y, z) in vertex],'k', linewidth=1,)
+    # for vertex in tree:
+    #     ax.plot([x for (x, y, z) in vertex],[y for (x, y, z) in vertex], [z for (x, y, z) in vertex],'k', linewidth=1,)
 
     if path is None:
         print("cannot create path")
