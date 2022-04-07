@@ -3,6 +3,7 @@ import math
 import numpy as np
 import random
 import matplotlib.pyplot as plt
+from sympy import li
 
 
 class Tree:
@@ -107,7 +108,7 @@ class RRTStar:
                 self.rewire(neighbor_indexes, new_point, new_idx)
 
                 plt.plot([self.T.vertices[nearest_idx][0], new_point[0]], [self.T.vertices[nearest_idx][1], new_point[1]], 'k', linewidth=1,)
-                plot_circle(new_point[0], new_point[1], radius, "k--")
+                plot_circle(new_point[0], new_point[1], radius, "k--", linewidth=0.1)
                 plt.pause(0.001)
 
                 # print(self.T.edges[nearest_idx])
@@ -119,10 +120,8 @@ class RRTStar:
                     else:
                         l = last_plt.pop(0)
                         l.remove()
-                    plt_path = plt.plot([x for (x, y) in path], [y for (x, y) in path], 'g', linewidth=3,)
-                    
-                    for i, path in enumerate(self.paths):
-                        init_path = plt.plot([x for (x, y) in path], [y for (x, y) in path], 'r', linewidth=1,)
+                    plt_path = plt.plot([x for (x, y) in path], [y for (x, y) in path], 'g', linewidth=2,)
+                    init_path = plt.plot([x for (x, y) in self.paths[0]], [y for (x, y) in self.paths[0]], 'r', linewidth=1,)
                     last_plt = plt_path
 
         plt.plot([x for (x, y) in path], [y for (x, y) in path], '-b', linewidth=4,)
@@ -252,7 +251,7 @@ class RRTStar:
             if no_collision and new_cost < self.cost[i]:
                 print("rewire")
                 self.cost[i] = new_cost
-                self.T.edges[i-1][1] = new_idx
+                self.T.edges[i-1][0] = new_idx
 
     def reach_to_goal(self, point):
         dist = self.distance(point, self.goal)
@@ -281,12 +280,12 @@ class RRTStar:
         return vertices
 
 
-def plot_circle(x, y, size, color="-b"):
+def plot_circle(x, y, size, color="-b", linewidth=1):
     deg = list(range(0, 360, 5))
     deg.append(0)
     xl = [x + size * np.cos(np.deg2rad(d)) for d in deg]
     yl = [y + size * np.sin(np.deg2rad(d)) for d in deg]
-    plt.plot(xl, yl, color)
+    plt.plot(xl, yl, color, linewidth=linewidth,)
 
 
 if __name__ == "__main__":
@@ -316,7 +315,7 @@ if __name__ == "__main__":
                        delta_distance=5,
                        gamma_RRT_star=30,
                        epsilon=0.2, 
-                       max_iter=800)
+                       max_iter=1000)
 
     path = planner.generate_path()
     tree = planner.get_rrt_tree()

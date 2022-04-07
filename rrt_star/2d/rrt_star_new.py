@@ -58,6 +58,8 @@ class RRTStar(NodeData):
         self.gamma_RRTs = gamma_RRT_star
         self.d = dimension
         self.tree = self._create_tree()
+
+        self.search_radius = gamma_RRT_star
         
         self.goal_node = None
         self.paths = []
@@ -71,7 +73,17 @@ class RRTStar(NodeData):
         return tree
 
     def generate_path(self):
-        
+        last_plt = None
+        plt.plot(self.start[0],self.start[1],'*g',self.goal[0], self.goal[1],'*r', markersize=12)
+        plt.title("RRT Star with Obstacles")
+        plt.xlabel("X-Position")
+        plt.ylabel("Y-Position")
+        plt.xlim(self.env.x_min-5, self.env.x_max+5)
+        plt.ylim(self.env.y_min-5, self.env.y_max+5)
+
+        for circle in self.env.obstacles:
+            plot_circle(circle[0], circle[1], circle[2])
+
         for i in range(self.max_iter):
             x_rand = self.sample_free()
             nearest_node, x_nearest = self.nearest(x_rand)
@@ -97,9 +109,13 @@ class RRTStar(NodeData):
                         if (near_cost + self.get_distance(x_near, x_new)) < c_min:
                             c_min = near_cost + self.get_distance(x_near, x_new)
                             min_node = near_node
+                
                 self.tree.update(nodes=[(new_node, {NodeData.COST: c_min,
                                                      NodeData.POINT: x_new})])
                 self.tree.add_edge(min_node, new_node)
+
+                plt.plot([self.tree.nodes[nearest_node][NodeData.POINT][0],x_new[0]], [self.tree.nodes[nearest_node][NodeData.POINT][1],x_new[1]], 'r--', linewidth=0.5,)
+                plt.scatter(x_new[0], x_new[1], s=10, c = 'b')
 
                 new_cost = self.tree.nodes[new_node][NodeData.COST]
                 x_new = self.tree.nodes[new_node][NodeData.POINT]
@@ -113,9 +129,28 @@ class RRTStar(NodeData):
                             parent_node = [node for node in self.tree.predecessors(near_node)][0]
                             self.tree.remove_edge(parent_node, near_node)
                             self.tree.add_edge(new_node, near_node)
-                
+
+                plt.plot([self.tree.nodes[min_node][NodeData.POINT][0], x_new[0]], [self.tree.nodes[min_node][NodeData.POINT][1],x_new[1]], 'k', linewidth=0.5,)
+                plot_circle(x_new[0], x_new[1], self.search_radius, "k--", linewidth=0.1)
+                plt.pause(0.001)
+
                 if self.reach_to_goal(x_new):
                     self.goal_node = new_node
+                    path = self.get_rrt_path()
+                    self.paths.append(path)
+                    if last_plt is None:
+                        pass
+                    else:
+                        l = last_plt.pop(0)
+                        l.remove()
+                    plt_path = plt.plot([x for (x, y) in path], [y for (x, y) in path], 'g', linewidth=2,)
+                    init_path = plt.plot([x for (x, y) in self.paths[0]], [y for (x, y) in self.paths[0]], 'r', linewidth=1,)
+                    last_plt = plt_path
+
+        plt.plot([x for (x, y) in path], [y for (x, y) in path], '-b', linewidth=4,)
+        plt.show(block=False)
+        plt.pause(1)
+        plt.close()
 
     def sample_free(self):
         if np.random.random() > self.epsilon:
@@ -148,13 +183,13 @@ class RRTStar(NodeData):
     def near(self, x_rand):
         card_V = len(self.tree.nodes) + 1
         r = self.gamma_RRTs * ((math.log(card_V) / card_V) ** (1/self.d))
-        search_radius = min(r, self.gamma_RRTs)
+        self.search_radius = min(r, self.gamma_RRTs)
         distances = [self.get_distance(self.tree.nodes[node][NodeData.POINT], x_rand) for node in self.tree.nodes]
 
         near_nodes = []
         for node, dist in enumerate(distances):
             if self.collision_free(self.tree.nodes[node][NodeData.POINT], x_rand):
-                if dist <= search_radius:
+                if dist <= self.search_radius:
                     near_nodes.append(node)
 
         return near_nodes
@@ -234,12 +269,12 @@ class RRTStar(NodeData):
         return trees
 
 
-def plot_circle(x, y, size, color="-b"):
+def plot_circle(x, y, size, color="-b", linewidth=1):
     deg = list(range(0, 360, 5))
     deg.append(0)
     xl = [x + size * np.cos(np.deg2rad(d)) for d in deg]
     yl = [y + size * np.sin(np.deg2rad(d)) for d in deg]
-    plt.plot(xl, yl, color)
+    plt.plot(xl, yl, color, linewidth=linewidth,)
 
 
 if __name__ == "__main__":
@@ -267,7 +302,7 @@ if __name__ == "__main__":
                        start=start_point, 
                        goal=goal_point, 
                        delta_distance=5,
-                       gamma_RRT_star=100,
+                       gamma_RRT_star=30,
                        epsilon=0.2, 
                        max_iter=1000)
 
